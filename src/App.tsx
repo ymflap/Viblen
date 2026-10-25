@@ -1,5 +1,10 @@
 import { useState } from "react";
 import type { Language } from "./i18n";
+import {
+  navigationItems,
+  defaultSection,
+} from "./app/navigation";
+import type { SectionKey } from "./app/navigation";
 
 type AppProps = {
   language: Language;
@@ -59,25 +64,12 @@ const content = {
   },
 } as const;
 
-const navigation = [
-  { key: "overview", icon: "◫" },
-  { key: "products", icon: "▦" },
-  { key: "sales", icon: "↗" },
-  { key: "inventory", icon: "▤" },
-  { key: "invoices", icon: "▧" },
-  { key: "customers", icon: "♙" },
-  { key: "employees", icon: "♧" },
-  { key: "reports", icon: "▥" },
-  { key: "settings", icon: "⚙" },
-] as const;
-
-type SectionKey = (typeof navigation)[number]["key"];
-
 export default function App({ language }: AppProps) {
   const t = content[language];
   const isArabic = language === "ar";
+
   const [activeSection, setActiveSection] =
-    useState<SectionKey>("overview");
+    useState<SectionKey>(defaultSection);
 
   const activeTitle = t[activeSection];
   const isOverview = activeSection === "overview";
@@ -96,7 +88,7 @@ export default function App({ language }: AppProps) {
         <div className="sidebar-label">{t.workspace}</div>
 
         <nav className="navigation" aria-label={t.workspace}>
-          {navigation.map((item) => {
+          {navigationItems.map((item) => {
             const isActive = activeSection === item.key;
 
             return (
@@ -186,9 +178,11 @@ export default function App({ language }: AppProps) {
             <section className="setup-card">
               <div className="setup-icon" aria-hidden="true">
                 <span>
-                  {navigation.find(
-                    (item) => item.key === activeSection,
-                  )?.icon}
+                  {
+                    navigationItems.find(
+                      (item) => item.key === activeSection,
+                    )?.icon
+                  }
                 </span>
               </div>
 
@@ -208,4 +202,5 @@ export default function App({ language }: AppProps) {
       </main>
     </div>
   );
-}
+                }
+      
