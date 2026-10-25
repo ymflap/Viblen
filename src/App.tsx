@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Language } from "./i18n";
 
 type AppProps = {
@@ -28,6 +29,7 @@ const content = {
     status: "قيد التجهيز",
     language: "العربية",
     footer: "إدارة أعمالك، في مكان واحد",
+    sectionDescription: "نعمل على تجهيز هذا القسم ضمن منصة ڤيبلن.",
   },
   en: {
     brand: "Viblen",
@@ -52,6 +54,8 @@ const content = {
     status: "In progress",
     language: "English",
     footer: "Your business, all in one place",
+    sectionDescription:
+      "We are preparing this section as part of the Viblen platform.",
   },
 } as const;
 
@@ -67,9 +71,16 @@ const navigation = [
   { key: "settings", icon: "⚙" },
 ] as const;
 
+type SectionKey = (typeof navigation)[number]["key"];
+
 export default function App({ language }: AppProps) {
   const t = content[language];
   const isArabic = language === "ar";
+  const [activeSection, setActiveSection] =
+    useState<SectionKey>("overview");
+
+  const activeTitle = t[activeSection];
+  const isOverview = activeSection === "overview";
 
   return (
     <div className="app-shell" dir={isArabic ? "rtl" : "ltr"}>
@@ -85,21 +96,28 @@ export default function App({ language }: AppProps) {
         <div className="sidebar-label">{t.workspace}</div>
 
         <nav className="navigation" aria-label={t.workspace}>
-          {navigation.map((item, index) => (
-            <a
-              key={item.key}
-              href="#"
-              className={`nav-item ${index === 0 ? "active" : ""}`}
-              aria-current={index === 0 ? "page" : undefined}
-              onClick={(event) => event.preventDefault()}
-            >
-              <span className="nav-icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span>{t[item.key]}</span>
-              {index === 0 && <span className="active-indicator" />}
-            </a>
-          ))}
+          {navigation.map((item) => {
+            const isActive = activeSection === item.key;
+
+            return (
+              <a
+                key={item.key}
+                href={`#${item.key}`}
+                className={`nav-item ${isActive ? "active" : ""}`}
+                aria-current={isActive ? "page" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setActiveSection(item.key);
+                }}
+              >
+                <span className="nav-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span>{t[item.key]}</span>
+                {isActive && <span className="active-indicator" />}
+              </a>
+            );
+          })}
         </nav>
 
         <div className="sidebar-footer">
@@ -113,7 +131,7 @@ export default function App({ language }: AppProps) {
           <div className="breadcrumb">
             <span>{t.brand}</span>
             <span className="breadcrumb-separator">/</span>
-            <strong>{t.dashboard}</strong>
+            <strong>{activeTitle}</strong>
           </div>
 
           <div className="topbar-actions">
@@ -128,43 +146,66 @@ export default function App({ language }: AppProps) {
         </header>
 
         <section className="page-content">
-          <div className="welcome-section">
-            <div>
-              <span className="eyebrow">{t.dashboard}</span>
-              <h1>{t.welcome}</h1>
-              <p>{t.description}</p>
-            </div>
-            <div className="welcome-symbol" aria-hidden="true">
-              <span>V</span>
-              <i />
-            </div>
-          </div>
+          {isOverview ? (
+            <>
+              <div className="welcome-section">
+                <div>
+                  <span className="eyebrow">{t.dashboard}</span>
+                  <h1>{t.welcome}</h1>
+                  <p>{t.description}</p>
+                </div>
 
-          <section className="setup-card">
-            <div className="setup-icon" aria-hidden="true">
-              <span>✦</span>
-            </div>
+                <div className="welcome-symbol" aria-hidden="true">
+                  <span>V</span>
+                  <i />
+                </div>
+              </div>
 
-            <div className="setup-copy">
-              <span className="status-label">
-                <span className="status-dot" />
-                {t.status}
-              </span>
-              <h2>{t.setupTitle}</h2>
-              <p>{t.setupDescription}</p>
-            </div>
+              <section className="setup-card">
+                <div className="setup-icon" aria-hidden="true">
+                  <span>✦</span>
+                </div>
 
-            <div className="setup-decoration" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
-          </section>
+                <div className="setup-copy">
+                  <span className="status-label">
+                    <span className="status-dot" />
+                    {t.status}
+                  </span>
+                  <h2>{t.setupTitle}</h2>
+                  <p>{t.setupDescription}</p>
+                </div>
+
+                <div className="setup-decoration" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </section>
+            </>
+          ) : (
+            <section className="setup-card">
+              <div className="setup-icon" aria-hidden="true">
+                <span>
+                  {navigation.find(
+                    (item) => item.key === activeSection,
+                  )?.icon}
+                </span>
+              </div>
+
+              <div className="setup-copy">
+                <span className="status-label">
+                  <span className="status-dot" />
+                  {t.status}
+                </span>
+                <h2>{activeTitle}</h2>
+                <p>{t.sectionDescription}</p>
+              </div>
+            </section>
+          )}
 
           <footer className="page-footer">{t.footer}</footer>
         </section>
       </main>
     </div>
   );
-    }
-  
+}
