@@ -6,10 +6,6 @@ type EmployeeLoginProps = {
   language: Language;
 };
 
-type LoginValues = {
-  email: string;
-  password: string;
-};
 
 const translations = {
   ar: {
