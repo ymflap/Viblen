@@ -1,3 +1,4 @@
+
 export const appContent = {
   ar: {
     brand: "ڤيبلن",
@@ -56,6 +57,13 @@ export const appContent = {
     category: "التصنيف",
     purchasePrice: "سعر الشراء",
     sellingPrice: "سعر البيع",
+    originalPrice: "السعر الأصلي",
+    discountType: "نوع الخصم",
+    noDiscount: "بدون خصم",
+    percentageDiscount: "خصم بنسبة مئوية",
+    fixedDiscount: "خصم بمبلغ ثابت",
+    discountValue: "قيمة الخصم",
+    finalPrice: "السعر النهائي",
     stockQuantity: "كمية المخزون",
     unit: "الوحدة",
     productSearchPlaceholder: "ابحث باسم المنتج أو الباركود...",
@@ -72,6 +80,7 @@ export const appContent = {
     duplicateBarcode: "هذا الباركود مستخدم بالفعل.",
     invalidPrice: "أدخل سعرًا صحيحًا.",
     invalidQuantity: "أدخل كمية صحيحة.",
+    invalidDiscount: "قيمة الخصم غير صحيحة.",
     productRequired: "اسم المنتج مطلوب.",
 
     // نقطة البيع
@@ -187,7 +196,7 @@ export const appContent = {
     english: "الإنجليزية",
     saveSettings: "حفظ الإعدادات",
   },
-
+    
   en: {
     brand: "Viblen",
     subtitle: "Business Management",
@@ -245,6 +254,13 @@ export const appContent = {
     category: "Category",
     purchasePrice: "Purchase price",
     sellingPrice: "Selling price",
+    originalPrice: "Original price",
+    discountType: "Discount type",
+    noDiscount: "No discount",
+    percentageDiscount: "Percentage discount",
+    fixedDiscount: "Fixed amount discount",
+    discountValue: "Discount value",
+    finalPrice: "Final price",
     stockQuantity: "Stock quantity",
     unit: "Unit",
     productSearchPlaceholder: "Search by product name or barcode...",
@@ -261,6 +277,7 @@ export const appContent = {
     duplicateBarcode: "This barcode is already in use.",
     invalidPrice: "Enter a valid price.",
     invalidQuantity: "Enter a valid quantity.",
+    invalidDiscount: "Invalid discount value.",
     productRequired: "Product name is required.",
 
     // Point of sale
@@ -377,4 +394,4 @@ export const appContent = {
     saveSettings: "Save settings",
   },
 } as const;
-      
+    
