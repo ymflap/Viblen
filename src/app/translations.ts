@@ -1,4 +1,3 @@
-
 export const appContent = {
   ar: {
     brand: "ڤيبلن",
