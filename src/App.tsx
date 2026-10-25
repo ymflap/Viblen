@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import type { FormEvent } from "react";
 import type { Language } from "./i18n";
@@ -12,23 +13,31 @@ type AppProps = {
   language: Language;
 };
 
+type DiscountType = "none" | "percent" | "fixed";
+
 type Product = {
   id: string;
   name: string;
   barcode: string;
   category: string;
   purchasePrice: string;
-  sellingPrice: string;
+  originalPrice: string;
+  discountType: DiscountType;
+  discountValue: string;
   stockQuantity: string;
   unit: string;
 };
 
-const emptyProduct = {
+type ProductForm = Omit<Product, "id">;
+
+const emptyProduct: ProductForm = {
   name: "",
   barcode: "",
   category: "",
   purchasePrice: "",
-  sellingPrice: "",
+  originalPrice: "",
+  discountType: "none",
+  discountValue: "",
   stockQuantity: "",
   unit: "",
 };
@@ -44,7 +53,8 @@ export default function App({ language }: AppProps) {
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState(emptyProduct);
+  const [formData, setFormData] =
+    useState<ProductForm>({ ...emptyProduct });
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -54,6 +64,7 @@ export default function App({ language }: AppProps) {
 
   const filteredProducts = products.filter((product) => {
     const query = search.trim().toLowerCase();
+
     return (
       product.name.toLowerCase().includes(query) ||
       product.barcode.toLowerCase().includes(query) ||
@@ -71,15 +82,19 @@ export default function App({ language }: AppProps) {
 
   function openEditForm(product: Product) {
     setEditingId(product.id);
+
     setFormData({
       name: product.name,
       barcode: product.barcode,
       category: product.category,
       purchasePrice: product.purchasePrice,
-      sellingPrice: product.sellingPrice,
+      originalPrice: product.originalPrice,
+      discountType: product.discountType,
+      discountValue: product.discountValue,
       stockQuantity: product.stockQuantity,
       unit: product.unit,
     });
+
     setFormError("");
     setNotice("");
     setFormOpen(true);
@@ -92,8 +107,60 @@ export default function App({ language }: AppProps) {
     setFormError("");
   }
 
+  function getDiscountAmount(
+    product: Pick<
+      Product,
+      "originalPrice" | "discountType" | "discountValue"
+    >,
+  ): number {
+    const originalPrice = Number(product.originalPrice);
+    const discountValue = Number(product.discountValue);
+
+    if (
+      product.discountType === "none" ||
+      product.discountValue.trim() === "" ||
+      !Number.isFinite(originalPrice) ||
+      !Number.isFinite(discountValue)
+    ) {
+      return 0;
+    }
+
+    if (product.discountType === "percent") {
+      return Math.min(
+        originalPrice,
+        (originalPrice * discountValue) / 100,
+      );
+    }
+
+    return Math.min(originalPrice, discountValue);
+  }
+
+  function getFinalPrice(
+    product: Pick<
+      Product,
+      "originalPrice" | "discountType" | "discountValue"
+    >,
+  ): number {
+    return Math.max(
+      0,
+      Number(product.originalPrice) -
+        getDiscountAmount(product),
+    );
+  }
+
+  function formatPrice(value: string | number): string {
+    return new Intl.NumberFormat(
+      isArabic ? "ar-EG" : "en-US",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      },
+    ).format(Number(value));
+  }
+
   function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     setFormError("");
     setNotice("");
 
@@ -101,7 +168,9 @@ export default function App({ language }: AppProps) {
     const barcode = formData.barcode.trim();
     const category = formData.category.trim();
     const purchasePrice = formData.purchasePrice.trim();
-    const sellingPrice = formData.sellingPrice.trim();
+    const originalPrice = formData.originalPrice.trim();
+    const discountType = formData.discountType;
+    const discountValue = formData.discountValue.trim();
     const stockQuantity = formData.stockQuantity.trim();
     const unit = formData.unit.trim();
 
@@ -114,12 +183,30 @@ export default function App({ language }: AppProps) {
       (purchasePrice !== "" &&
         (!Number.isFinite(Number(purchasePrice)) ||
           Number(purchasePrice) < 0)) ||
-      sellingPrice === "" ||
-      !Number.isFinite(Number(sellingPrice)) ||
-      Number(sellingPrice) < 0
+      originalPrice === "" ||
+      !Number.isFinite(Number(originalPrice)) ||
+      Number(originalPrice) < 0
     ) {
       setFormError(t.invalidPrice);
       return;
+    }
+
+    if (discountType !== "none") {
+      const numericDiscount = Number(discountValue);
+      const numericOriginalPrice = Number(originalPrice);
+
+      if (
+        discountValue === "" ||
+        !Number.isFinite(numericDiscount) ||
+        numericDiscount < 0 ||
+        (discountType === "percent" &&
+          numericDiscount > 100) ||
+        (discountType === "fixed" &&
+          numericDiscount > numericOriginalPrice)
+      ) {
+        setFormError(t.invalidDiscount);
+        return;
+      }
     }
 
     if (
@@ -150,7 +237,10 @@ export default function App({ language }: AppProps) {
       barcode,
       category,
       purchasePrice,
-      sellingPrice,
+      originalPrice,
+      discountType,
+      discountValue:
+        discountType === "none" ? "" : discountValue,
       stockQuantity,
       unit,
     };
@@ -175,17 +265,15 @@ export default function App({ language }: AppProps) {
     setProducts((current) =>
       current.filter((product) => product.id !== id),
     );
-    setNotice(t.success);
-  }
 
-  function formatPrice(value: string) {
-    return new Intl.NumberFormat(
-      isArabic ? "ar-EG" : "en-US",
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      },
-    ).format(Number(value));
+    setNotice(t.success);
+      }
+    
+  function changeSection(section: SectionKey) {
+    setActiveSection(section);
+    setFormOpen(false);
+    setFormError("");
+    setNotice("");
   }
 
   return (
@@ -213,10 +301,7 @@ export default function App({ language }: AppProps) {
                 aria-current={isActive ? "page" : undefined}
                 onClick={(event) => {
                   event.preventDefault();
-                  setActiveSection(item.key);
-                  setFormOpen(false);
-                  setFormError("");
-                  setNotice("");
+                  changeSection(item.key);
                 }}
               >
                 <span className="nav-icon" aria-hidden="true">
@@ -255,7 +340,7 @@ export default function App({ language }: AppProps) {
         </header>
 
         <section className="page-content">
-                    {isOverview ? (
+          {isOverview ? (
             <>
               <div className="welcome-section">
                 <div>
@@ -378,51 +463,101 @@ export default function App({ language }: AppProps) {
                       </label>
 
                       <label>
-                        {t.sellingPrice} *
+                        {t.originalPrice} *
                         <input
                           required
                           type="number"
                           min="0"
                           step="0.01"
-                          value={formData.sellingPrice}
+                          value={formData.originalPrice}
                           onChange={(event) =>
                             setFormData({
                               ...formData,
-                              sellingPrice: event.target.value,
+                              originalPrice: event.target.value,
                             })
                           }
                         />
                       </label>
 
                       <label>
-                        {t.stockQuantity} *
-                        <input
-                          required
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={formData.stockQuantity}
-                          onChange={(event) =>
+                        {t.discountType}
+                        <select
+                          value={formData.discountType}
+                          onChange={(event) => {
+                            const discountType =
+                              event.target.value as DiscountType;
+
                             setFormData({
                               ...formData,
-                              stockQuantity: event.target.value,
-                            })
-                          }
-                        />
+                              discountType,
+                              discountValue:
+                                discountType === "none"
+                                  ? ""
+                                  : formData.discountValue,
+                            });
+                          }}
+                        >
+                          <option value="none">
+                            {t.noDiscount}
+                          </option>
+                          <option value="percent">
+                            {t.percentageDiscount}
+                          </option>
+                          <option value="fixed">
+                            {t.fixedDiscount}
+                          </option>
+                        </select>
                       </label>
 
-                      <label>
-                        {t.unit}
-                        <input
-                          value={formData.unit}
-                          onChange={(event) =>
-                            setFormData({
-                              ...formData,
-                              unit: event.target.value,
-                            })
-                          }
-                        />
-                      </label>
+                      {formData.discountType !== "none" && (
+                        <label>
+                          {t.discountValue}
+                          <input
+                            required
+                            type="number"
+                            min="0"
+                            max={
+                              formData.discountType === "percent"
+                                ? 100
+                                : formData.originalPrice || undefined
+                            }
+                            step="0.01"
+                            value={formData.discountValue}
+                            onChange={(event) =>
+                              setFormData({
+                                ...formData,
+                                discountValue: event.target.value,
+                              })
+                            }
+                          />
+                        </label>
+                      )}
+
+                      <div className="price-preview">
+                        <span>{t.finalPrice}</span>
+                        <strong>
+                          {formData.originalPrice !== "" &&
+                          Number.isFinite(Number(formData.originalPrice)) &&
+                          Number(formData.originalPrice) >= 0 &&
+                          (formData.discountType === "none" ||
+                            (formData.discountValue !== "" &&
+                              Number.isFinite(Number(formData.discountValue)) &&
+                              Number(formData.discountValue) >= 0 &&
+                              (formData.discountType !== "percent" ||
+                                Number(formData.discountValue) <= 100) &&
+                              (formData.discountType !== "fixed" ||
+                                Number(formData.discountValue) <=
+                                  Number(formData.originalPrice))))
+                            ? formatPrice(
+                                getFinalPrice({
+                                  originalPrice: formData.originalPrice,
+                                  discountType: formData.discountType,
+                                  discountValue: formData.discountValue,
+                                }),
+                              )
+                            : "—"}
+                        </strong>
+                      </div>
 
                       {formError && (
                         <p role="alert" className="error-message">
@@ -432,10 +567,7 @@ export default function App({ language }: AppProps) {
 
                       <div className="form-actions">
                         <button type="submit">{t.save}</button>
-                        <button
-                          type="button"
-                          onClick={closeForm}
-                        >
+                        <button type="button" onClick={closeForm}>
                           {t.cancel}
                         </button>
                       </div>
@@ -447,7 +579,6 @@ export default function App({ language }: AppProps) {
               <section className="setup-card">
                 <div className="setup-copy">
                   <h2>{t.productManagement}</h2>
-
                   <p>
                     {t.productCode}: {products.length}
                   </p>
@@ -474,11 +605,15 @@ export default function App({ language }: AppProps) {
                             <th>{t.productName}</th>
                             <th>{t.barcode}</th>
                             <th>{t.category}</th>
-                            <th>{t.sellingPrice}</th>
+                            <th>{t.purchasePrice}</th>
+                            <th>{t.originalPrice}</th>
+                            <th>{t.discount}</th>
+                            <th>{t.finalPrice}</th>
                             <th>{t.stockQuantity}</th>
                             <th>{t.actions}</th>
                           </tr>
                         </thead>
+
                         <tbody>
                           {filteredProducts.map((product) => (
                             <tr key={product.id}>
@@ -486,13 +621,24 @@ export default function App({ language }: AppProps) {
                               <td>{product.barcode || "—"}</td>
                               <td>{product.category || "—"}</td>
                               <td>
-                                {formatPrice(product.sellingPrice)}
+                                {product.purchasePrice.trim() !== ""
+                                  ? formatPrice(product.purchasePrice)
+                                  : "—"}
+                              </td>
+                              <td>{formatPrice(product.originalPrice)}</td>
+                              <td>
+                                {product.discountType === "none"
+                                  ? "—"
+                                  : product.discountType === "percent"
+                                    ? `${product.discountValue}%`
+                                    : formatPrice(product.discountValue)}
+                              </td>
+                              <td>
+                                {formatPrice(getFinalPrice(product))}
                               </td>
                               <td>
                                 {product.stockQuantity}
-                                {product.unit
-                                  ? ` ${product.unit}`
-                                  : ""}
+                                {product.unit ? ` ${product.unit}` : ""}
                               </td>
                               <td>
                                 <button
@@ -527,7 +673,7 @@ export default function App({ language }: AppProps) {
                 </div>
               </section>
             </>
-                ) : (
+          ) : (
             <section className="setup-card">
               <div className="setup-icon" aria-hidden="true">
                 <span>
@@ -555,4 +701,5 @@ export default function App({ language }: AppProps) {
       </main>
     </div>
   );
-                  }
+          }
+              
