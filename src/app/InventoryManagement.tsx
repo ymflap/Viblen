@@ -407,7 +407,7 @@ function getUnitLabel(unit: UnitOption, language: Language): string {
   const [selectedGroup, setSelectedGroup] = useState("mass");
   const [customUnitName, setCustomUnitName] = useState("");
   const [customUnits, setCustomUnits] = useState<UnitOption[]>([]);
-  const [message, setMessage] = useState("");
+  const [, setMessage] = useState("");
 
   const notifiedRef = useRef<Record<string, "low" | "out" | "normal">>({});
 
